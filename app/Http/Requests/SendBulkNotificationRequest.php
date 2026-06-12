@@ -28,11 +28,17 @@ class SendBulkNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'idempotency_key' => ['required', 'string', 'max:100'],
             'channel' => ['required', Rule::enum(Channel::class)],
             'type' => ['required', Rule::enum(NotificationType::class)],
             'message' => ['required', 'string'],
             'recipient_ids' => ['required', 'array', 'min:1'],
             'recipient_ids.*' => ['integer', 'exists:subscribers,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['idempotency_key' => $this->header('Idempotency-Key')]);
     }
 }
