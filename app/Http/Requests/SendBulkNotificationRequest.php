@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\Channel;
+use App\Enums\NotificationType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SendBulkNotificationRequest extends FormRequest
 {
@@ -14,7 +17,7 @@ class SendBulkNotificationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -25,6 +28,11 @@ class SendBulkNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'channel' => ['required', Rule::enum(Channel::class)],
+            'type' => ['required', Rule::enum(NotificationType::class)],
+            'message' => ['required', 'string'],
+            'recipient_ids' => ['required', 'array', 'min:1'],
+            'recipient_ids.*' => ['integer', 'exists:subscribers,id'],
         ];
     }
 }
