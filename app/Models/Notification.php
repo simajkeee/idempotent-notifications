@@ -31,6 +31,11 @@ class Notification extends Model
         return $this->belongsTo(NotificationBatch::class, 'batch_id');
     }
 
+    public function isQueued(): bool
+    {
+        return $this->status === NotificationStatus::QUEUED;
+    }
+
     protected function casts(): array
     {
         return ['status' => NotificationStatus::class];
