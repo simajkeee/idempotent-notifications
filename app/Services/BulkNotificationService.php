@@ -14,22 +14,20 @@ use App\Models\NotificationBatch;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
-class BulkNotificationService
+readonly class BulkNotificationService
 {
+    public function __construct(
+        private BulkNotificationHasher $hasher,
+        private IdempotencyGuard $idempotencyGuard,
+    ) {}
+
     /**
      * @throws IdempotencyKeyException
      * @throws \JsonException
      */
     public function send(string $idempotencyKey, BulkNotification $bulkNotification): BulkNotificationResult
     {
-        $bodyHash = hash(
-            'sha256',
-            json_encode(
-                $bulkNotification->canonicalPayload(),
-                JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-            )
-        );
-
+        $bodyHash = $this->hasher->hash($bulkNotification);
         $result = $this->getIdempotencyResult($idempotencyKey, $bodyHash);
         if ($result !== null) {
             return $result;
@@ -59,9 +57,10 @@ class BulkNotificationService
     {
         $existingBatch = NotificationBatch::where('idempotency_key', $idempotencyKey)->first();
         if ($existingBatch !== null) {
-            if (! hash_equals($existingBatch->request_body_hash, $bodyHash)) {
-                throw new IdempotencyKeyException;
-            }
+            $this->idempotencyGuard->assertMatchingHash(
+                $existingBatch->request_body_hash,
+                $bodyHash,
+            );
 
             return new BulkNotificationResult(
                 batchId: $existingBatch->id,

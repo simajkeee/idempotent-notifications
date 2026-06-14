@@ -6,18 +6,18 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\IdempotencyKeyException;
 use App\Http\Requests\SendBulkNotificationRequest;
-use App\Services\BulkNotificationService;
+use App\Services\BulkNotificationSender;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class SendBulkNotificationsController extends Controller
 {
-    public function __construct(private BulkNotificationService $bulkNotificationService) {}
+    public function __construct(private readonly BulkNotificationSender $bulkNotificationSender) {}
 
     public function __invoke(SendBulkNotificationRequest $request): JsonResponse
     {
         try {
-            $result = $this->bulkNotificationService
+            $result = $this->bulkNotificationSender
                 ->send(
                     idempotencyKey: (string) $request->safe()->string('idempotency_key'),
                     bulkNotification: $request->toDto()
