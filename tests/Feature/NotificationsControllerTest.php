@@ -71,9 +71,4 @@ class NotificationsControllerTest extends TestCase
             );
         }
     }
-
-    public function test_duplicate_idempotency_key_doesnt_create_duplicate_notifications(): void
-    {
-
-    }
 }

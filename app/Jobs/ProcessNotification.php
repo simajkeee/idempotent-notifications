@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Enums\NotificationStatus;
 use App\Models\Notification;
+use App\Services\ProviderResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,7 +18,7 @@ class ProcessNotification implements ShouldQueue
 
     public function __construct(public readonly int $notificationId) {}
 
-    public function handle(): void
+    public function handle(ProviderResolver $resolver): void
     {
         $notification = Notification::with(['batch', 'recipient'])
             ->findOrFail($this->notificationId);
@@ -25,6 +27,11 @@ class ProcessNotification implements ShouldQueue
             return;
         }
 
-        // call later
+        $provider = $resolver->resolve($notification->batch->channel);
+        $provider->send();
+
+        $notification->update([
+            'status' => NotificationStatus::DELIVERED,
+        ]);
     }
 }
