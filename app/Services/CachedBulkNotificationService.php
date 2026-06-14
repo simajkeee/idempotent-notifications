@@ -9,12 +9,12 @@ use App\DTO\BulkNotificationResult;
 use App\Enums\BulkNotificationStatus;
 use Illuminate\Support\Facades\Cache;
 
-readonly class CachedBulkNotificationService implements BulkNotificationSender
+class CachedBulkNotificationService implements BulkNotificationSender
 {
     public function __construct(
-        private BulkNotificationService $bulkNotificationService,
-        private BulkNotificationHasher $hasher,
-        private IdempotencyGuard $idempotencyGuard,
+        private readonly BulkNotificationService $bulkNotificationService,
+        private readonly BulkNotificationHasher $hasher,
+        private readonly IdempotencyGuard $idempotencyGuard,
     ) {}
 
     public function send(string $idempotencyKey, BulkNotification $bulkNotification): BulkNotificationResult
@@ -27,7 +27,7 @@ readonly class CachedBulkNotificationService implements BulkNotificationSender
          *     notification_count: int,
          *     status: string
         } $cached */
-        $cached = Cache::store('redis')->get($cacheKey);
+        $cached = Cache::get($cacheKey);
         if ($cached !== null) {
             $this->idempotencyGuard->assertMatchingHash(
                 $cached['body_hash'],
@@ -47,7 +47,7 @@ readonly class CachedBulkNotificationService implements BulkNotificationSender
             $bulkNotification,
         );
 
-        Cache::store('redis')->put($cacheKey, [
+        Cache::put($cacheKey, [
             'body_hash' => $bodyHash,
             'batch_id' => $result->batchId,
             'notification_count' => $result->notificationCount,

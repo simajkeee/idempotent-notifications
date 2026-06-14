@@ -6,7 +6,7 @@ namespace App\Services;
 
 use App\DTO\BulkNotification;
 
-final class BulkNotificationHasher
+class BulkNotificationHasher
 {
     public function hash(BulkNotification $bulkNotification): string
     {

@@ -14,11 +14,11 @@ use App\Models\NotificationBatch;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
-readonly class BulkNotificationService
+class BulkNotificationService implements BulkNotificationSender
 {
     public function __construct(
-        private BulkNotificationHasher $hasher,
-        private IdempotencyGuard $idempotencyGuard,
+        private readonly BulkNotificationHasher $hasher,
+        private readonly IdempotencyGuard $idempotencyGuard,
     ) {}
 
     /**
