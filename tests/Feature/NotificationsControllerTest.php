@@ -71,4 +71,57 @@ class NotificationsControllerTest extends TestCase
             );
         }
     }
+
+    public function test_duplicate_request_returns_cached_response_without_creating_duplicates(): void
+    {
+        Queue::fake();
+        $subscribers = Subscriber::factory()->count(3)->create();
+        $payload = [
+            'channel' => 'email',
+            'type' => 'transactional',
+            'message' => 'Now you have access to...',
+            'recipient_ids' => $subscribers->pluck('id')->all(),
+        ];
+        $headers = ['Idempotency-Key' => 'duplicate-key'];
+
+        $firstResponse = $this->postJson('/api/notifications/bulk', $payload, $headers);
+        $secondResponse = $this->postJson('/api/notifications/bulk', $payload, $headers);
+
+        $firstResponse->assertAccepted();
+        $secondResponse->assertOk()
+            ->assertExactJson($firstResponse->json());
+
+        $this->assertDatabaseCount('notification_batches', 1);
+        $this->assertDatabaseCount('notifications', 3);
+        Queue::assertPushed(ProcessNotification::class, 3);
+    }
+
+    public function test_same_idempotency_key_with_different_request_returns_conflict(): void
+    {
+        Queue::fake();
+        $subscribers = Subscriber::factory()->count(3)->create();
+        $payload = [
+            'channel' => 'email',
+            'type' => 'transactional',
+            'message' => 'Original message',
+            'recipient_ids' => $subscribers->pluck('id')->all(),
+        ];
+        $headers = ['Idempotency-Key' => 'conflicting-key'];
+
+        $firstResponse = $this->postJson('/api/notifications/bulk', $payload, $headers);
+        $conflictingResponse = $this->postJson('/api/notifications/bulk', [
+            ...$payload,
+            'message' => 'Different message',
+        ], $headers);
+
+        $firstResponse->assertAccepted();
+        $conflictingResponse->assertConflict()
+            ->assertExactJson([
+                'error' => 'idempotency_key_conflict',
+            ]);
+
+        $this->assertDatabaseCount('notification_batches', 1);
+        $this->assertDatabaseCount('notifications', 3);
+        Queue::assertPushed(ProcessNotification::class, 3);
+    }
 }
