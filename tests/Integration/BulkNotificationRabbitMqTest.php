@@ -8,10 +8,11 @@ use App\Enums\NotificationStatus;
 use App\Models\Notification;
 use App\Models\Subscriber;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
+use VladimirYuldashev\LaravelQueueRabbitMQ\Queue\RabbitMQQueue;
 
 class BulkNotificationRabbitMqTest extends TestCase
 {
@@ -33,9 +34,11 @@ class BulkNotificationRabbitMqTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->purgeQueue();
-
-        parent::tearDown();
+        try {
+            $this->purgeQueue();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     public function test_bulk_api_job_is_processed_by_rabbitmq_worker_and_marked_as_delivered(): void
@@ -88,10 +91,10 @@ class BulkNotificationRabbitMqTest extends TestCase
 
     private function purgeQueue(): void
     {
-        Artisan::call('rabbitmq:queue-purge', [
-            'queue' => self::QUEUE,
-            'connection' => 'rabbitmq',
-            '--force' => true,
-        ]);
+        /** @var RabbitMQQueue $queue */
+        $queue = Queue::connection('rabbitmq');
+
+        $queue->declareQueue(self::QUEUE);
+        $queue->purge(self::QUEUE);
     }
 }
