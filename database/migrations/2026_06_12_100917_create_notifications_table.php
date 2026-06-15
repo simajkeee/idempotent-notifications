@@ -18,7 +18,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('batch_id')->constrained('notification_batches');
             $table->foreignId('recipient_id')->constrained('subscribers');
-            $table->enum('status', NotificationStatus::cases());
+            $table->enum('status', NotificationStatus::cases())
+                ->default(NotificationStatus::QUEUED->value);
             $table->timestamps();
 
             $table->unique(['batch_id', 'recipient_id']);

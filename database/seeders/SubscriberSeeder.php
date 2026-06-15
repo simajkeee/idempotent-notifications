@@ -14,6 +14,29 @@ class SubscriberSeeder extends Seeder
      */
     public function run(): void
     {
+        Subscriber::factory()->createMany([
+            [
+                'name' => 'Email Permanent Failure',
+                'email' => 'permanent-failure@example.test',
+                'phone' => null,
+            ],
+            [
+                'name' => 'Email Temporary Failure',
+                'email' => 'temporary-failure@example.test',
+                'phone' => null,
+            ],
+            [
+                'name' => 'SMS Permanent Failure',
+                'email' => null,
+                'phone' => '+10000000001',
+            ],
+            [
+                'name' => 'SMS Temporary Failure',
+                'email' => null,
+                'phone' => '+10000000002',
+            ],
+        ]);
+
         Subscriber::factory()->count(10)->create();
     }
 }

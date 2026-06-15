@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\NotificationStatus;
+use App\Exceptions\InvalidNotificationStatusTransition;
 use Database\Factories\NotificationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +24,6 @@ class Notification extends Model
     protected $fillable = [
         'batch_id',
         'recipient_id',
-        'status',
     ];
 
     public function recipient(): BelongsTo
@@ -39,6 +39,26 @@ class Notification extends Model
     public function isQueued(): bool
     {
         return $this->status === NotificationStatus::QUEUED;
+    }
+
+    public function markDelivered(): void
+    {
+        if ($this->status !== NotificationStatus::QUEUED) {
+            throw new InvalidNotificationStatusTransition;
+        }
+
+        $this->status = NotificationStatus::DELIVERED;
+        $this->save();
+    }
+
+    public function markDropped(): void
+    {
+        if ($this->status !== NotificationStatus::QUEUED) {
+            throw new InvalidNotificationStatusTransition;
+        }
+
+        $this->status = NotificationStatus::DROPPED;
+        $this->save();
     }
 
     protected function casts(): array

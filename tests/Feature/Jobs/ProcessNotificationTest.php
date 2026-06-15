@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Jobs;
 
 use App\Enums\NotificationStatus;
+use App\Exceptions\PermanentProviderException;
+use App\Exceptions\TemporaryProviderException;
 use App\Jobs\ProcessNotification;
 use App\Models\Notification;
 use App\Models\NotificationBatch;
@@ -63,6 +65,72 @@ class ProcessNotificationTest extends TestCase
 
         self::assertSame(
             NotificationStatus::DELIVERED,
+            $notification->fresh()->status,
+        );
+    }
+
+    public function test_temporary_provider_failure_is_rethrown_and_notification_remains_queued(): void
+    {
+        $notification = Notification::factory()->createOne();
+
+        $emailProvider = Mockery::mock(EmailProviderMock::class);
+        $emailProvider->expects('send')
+            ->once()
+            ->with(Mockery::on(
+                fn (Notification $argument): bool => $argument->is($notification)
+            ))
+            ->andThrow(new TemporaryProviderException);
+
+        $smsProvider = Mockery::mock(SmsProviderMock::class);
+        $smsProvider->shouldNotReceive('send');
+
+        $job = new ProcessNotification($notification->id);
+
+        try {
+            $job->handle(new ProviderResolver($emailProvider, $smsProvider));
+            self::fail("TemporaryProviderException wasn't thrown");
+        } catch (TemporaryProviderException) {
+            self::assertSame(
+                NotificationStatus::QUEUED,
+                $notification->fresh()->status,
+            );
+        }
+    }
+
+    public function test_permanent_provider_failure_marks_notification_as_dropped(): void
+    {
+        $notification = Notification::factory()->createOne();
+
+        $emailProvider = Mockery::mock(EmailProviderMock::class);
+        $emailProvider->expects('send')
+            ->once()
+            ->with(Mockery::on(
+                fn (Notification $argument): bool => $argument->is($notification)
+            ))
+            ->andThrow(new PermanentProviderException);
+
+        $smsProvider = Mockery::mock(SmsProviderMock::class);
+        $smsProvider->shouldNotReceive('send');
+
+        $job = new ProcessNotification($notification->id);
+
+        $job->handle(new ProviderResolver($emailProvider, $smsProvider));
+
+        self::assertSame(
+            NotificationStatus::DROPPED,
+            $notification->fresh()->status,
+        );
+    }
+
+    public function test_failed_marks_notification_as_dropped(): void
+    {
+        $notification = Notification::factory()->createOne();
+
+        $job = new ProcessNotification($notification->id);
+        $job->failed(new TemporaryProviderException);
+
+        self::assertSame(
+            NotificationStatus::DROPPED,
             $notification->fresh()->status,
         );
     }

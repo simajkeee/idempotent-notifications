@@ -7,7 +7,6 @@ namespace App\Services;
 use App\DTO\BulkNotification;
 use App\DTO\BulkNotificationResult;
 use App\Enums\BulkNotificationStatus;
-use App\Enums\NotificationStatus;
 use App\Exceptions\IdempotencyKeyException;
 use App\Jobs\ProcessNotification;
 use App\Models\NotificationBatch;
@@ -88,7 +87,6 @@ class BulkNotificationService implements BulkNotificationSender
             foreach ($bulkNotification->recipientIds as $recipientId) {
                 $batch->notifications()->create([
                     'recipient_id' => $recipientId,
-                    'status' => NotificationStatus::QUEUED,
                 ]);
             }
 
