@@ -1,0 +1,291 @@
+{
+    "info": {
+        "_postman_id": "6d36b513-585f-4ee9-aa48-72ecf16c5a43",
+        "name": "Notification Service",
+        "description": "Requests for testing bulk notification delivery, idempotency, and subscriber notification history.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost/api"
+        },
+        {
+            "key": "subscriber_id",
+            "value": "1"
+        },
+        {
+            "key": "second_subscriber_id",
+            "value": "2"
+        },
+        {
+            "key": "idempotency_key",
+            "value": "postman-bulk-request-1"
+        }
+    ],
+    "item": [
+        {
+            "name": "Bulk Notifications",
+            "item": [
+                {
+                    "name": "Send Transactional Email Batch",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Batch is accepted', function () {",
+                                    "    pm.response.to.have.status(202);",
+                                    "});",
+                                    "",
+                                    "pm.test('Response contains queued batch', function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.batch_id).to.be.a('number');",
+                                    "    pm.expect(response.notification_count).to.eql(2);",
+                                    "    pm.expect(response.status).to.eql('queued');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idempotency_key}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"Your order has shipped.\",\n    \"recipient_ids\": [\n        {{subscriber_id}},\n        {{second_subscriber_id}}\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/bulk",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "bulk"
+                            ]
+                        },
+                        "description": "Creates an Email batch and dispatches jobs to the high-priority queue."
+                    }
+                },
+                {
+                    "name": "Replay Identical Batch",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Idempotent replay returns existing batch', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    pm.expect(pm.response.json().status).to.eql('queued');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idempotency_key}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"Your order has shipped.\",\n    \"recipient_ids\": [\n        {{subscriber_id}},\n        {{second_subscriber_id}}\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/bulk",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "bulk"
+                            ]
+                        },
+                        "description": "Run after Send Transactional Email Batch. It reuses the same key and payload."
+                    }
+                },
+                {
+                    "name": "Reject Conflicting Idempotency Key",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Conflicting payload is rejected', function () {",
+                                    "    pm.response.to.have.status(409);",
+                                    "    pm.expect(pm.response.json().error).to.eql('idempotency_key_conflict');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{idempotency_key}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"A different message using the same key.\",\n    \"recipient_ids\": [\n        {{subscriber_id}},\n        {{second_subscriber_id}}\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/bulk",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "bulk"
+                            ]
+                        },
+                        "description": "Run after Send Transactional Email Batch. It reuses the key with a different payload."
+                    }
+                },
+                {
+                    "name": "Send Marketing SMS Batch",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.variables.set('marketing_idempotency_key', `postman-marketing-${Date.now()}`);"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Marketing batch is accepted', function () {",
+                                    "    pm.response.to.have.status(202);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Idempotency-Key",
+                                "value": "{{marketing_idempotency_key}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"sms\",\n    \"type\": \"marketing\",\n    \"message\": \"This week's offers are available.\",\n    \"recipient_ids\": [\n        {{subscriber_id}}\n    ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/notifications/bulk",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "notifications",
+                                "bulk"
+                            ]
+                        },
+                        "description": "Creates an SMS batch and dispatches jobs to the default-priority queue."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Subscriber Notifications",
+            "item": [
+                {
+                    "name": "Get Subscriber Notification History",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('History is returned', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.data).to.be.an('array');",
+                                    "    pm.expect(response.meta).to.be.an('object');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/subscribers/{{subscriber_id}}/notifications?page=1&per_page=20",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "subscribers",
+                                "{{subscriber_id}}",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "20"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -140,6 +140,16 @@ curl 'http://localhost/api/subscribers/1/notifications?per_page=20'
 
 Notifications are returned newest first with pagination metadata.
 
+### Postman
+
+Import the collection from:
+
+```text
+postman/Notification-Service.postman_collection.json
+```
+
+It includes bulk notification success, idempotent replay, idempotency conflict, priority queue examples, subscriber history, and basic response assertions.
+
 ## Mock Providers
 
 Seeded subscribers include deterministic provider failure cases:
