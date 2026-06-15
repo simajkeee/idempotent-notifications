@@ -35,8 +35,18 @@ class SubscriberSeeder extends Seeder
                 'email' => null,
                 'phone' => '+10000000002',
             ],
+            [
+                'name' => 'Regular Subscriber One',
+                'email' => 'subscriber-one@example.test',
+                'phone' => '+10000000010',
+            ],
+            [
+                'name' => 'Regular Subscriber Two',
+                'email' => 'subscriber-two@example.test',
+                'phone' => '+10000000011',
+            ],
         ]);
 
-        Subscriber::factory()->count(10)->create();
+        Subscriber::factory()->count(8)->create();
     }
 }

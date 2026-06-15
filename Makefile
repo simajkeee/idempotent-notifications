@@ -1,6 +1,6 @@
 SAIL := vendor/bin/sail
 
-.PHONY: help up down restart build logs shell key migrate fresh seed test test-integration worker-stop worker-start
+.PHONY: help up down restart build logs shell key migrate fresh seed cache-drop test test-integration worker-stop worker-start
 
 help:
 	@printf '%s\n' \
@@ -14,6 +14,7 @@ help:
 		'make migrate           Run database migrations' \
 		'make fresh             Rebuild and seed the development database' \
 		'make seed              Run database seeders' \
+		'make cache-drop        Clear Laravel caches' \
 		'make test              Run the regular test suite' \
 		'make test-integration  Run the real RabbitMQ integration suite' \
 		'make worker-stop       Stop the queue worker' \
@@ -47,6 +48,9 @@ fresh:
 
 seed:
 	$(SAIL) artisan db:seed
+
+cache-drop:
+	$(SAIL) artisan optimize:clear
 
 test:
 	$(SAIL) artisan test

@@ -132,18 +132,31 @@ Import the collection from:
 postman/Notification-Service.postman_collection.json
 ```
 
-It includes bulk notification success, idempotent replay, idempotency conflict, priority queue examples, subscriber history, and basic response assertions.
+It includes a happy-path bulk Email batch, a failure-path bulk SMS batch, idempotency conflict coverage, subscriber history, and basic response assertions. To verify idempotent replay, send the same Email batch request twice with the same `Idempotency-Key`.
 
 ## Mock Providers
 
-Seeded subscribers include deterministic provider failure cases:
+Seeded subscribers include deterministic provider failure cases and fixed IDs after `make fresh`:
 
-| Recipient | Provider behavior |
+| Subscriber ID | Recipient | Provider behavior |
+| --- | --- | --- |
+| `1` | `permanent-failure@example.test` | Permanent Email failure |
+| `2` | `temporary-failure@example.test` | Temporary Email failure |
+| `3` | `+10000000001` | Permanent SMS failure |
+| `4` | `+10000000002` | Temporary SMS failure |
+
+The collection uses deterministic success-path subscribers for delivered flows:
+
+| Subscriber ID | Recipient |
 | --- | --- |
-| `permanent-failure@example.test` | Permanent Email failure |
-| `temporary-failure@example.test` | Temporary Email failure |
-| `+10000000001` | Permanent SMS failure |
-| `+10000000002` | Temporary SMS failure |
+| `5` | `subscriber-one@example.test` |
+| `6` | `subscriber-two@example.test` |
+
+In the Postman collection:
+
+- `{{subscriber_with_dropped_status_id}}` points to subscriber `3`
+- `{{subscriber_with_delivered_status_id}}` points to subscriber `5`
+- `{{second_subscriber_with_delivered_status_id}}` points to subscriber `6`
 
 Mock providers synchronously confirm successful delivery. Therefore, successful notifications transition directly from `queued` to `delivered`. The `sent` status is reserved for providers that acknowledge submission before confirming delivery.
 

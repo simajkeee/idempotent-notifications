@@ -1,6 +1,6 @@
 {
     "info": {
-        "_postman_id": "6d36b513-585f-4ee9-aa48-72ecf16c5a43",
+        "_postman_id": "1d63369f-8cfc-49c2-9c05-d5389ecbb8be",
         "name": "Notification Service",
         "description": "Requests for testing bulk notification delivery, idempotency, and subscriber notification history.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -11,12 +11,16 @@
             "value": "http://localhost/api"
         },
         {
-            "key": "subscriber_id",
-            "value": "1"
+            "key": "subscriber_with_dropped_status_id",
+            "value": "3"
         },
         {
-            "key": "second_subscriber_id",
-            "value": "2"
+            "key": "subscriber_with_delivered_status_id",
+            "value": "5"
+        },
+        {
+            "key": "second_subscriber_with_delivered_status_id",
+            "value": "6"
         },
         {
             "key": "idempotency_key",
@@ -66,7 +70,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"Your order has shipped.\",\n    \"recipient_ids\": [\n        {{subscriber_id}},\n        {{second_subscriber_id}}\n    ]\n}"
+                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"Your order has shipped.\",\n    \"recipient_ids\": [\n        {{subscriber_with_delivered_status_id}},\n        {{second_subscriber_with_delivered_status_id}}\n    ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/notifications/bulk",
@@ -78,55 +82,7 @@
                                 "bulk"
                             ]
                         },
-                        "description": "Creates an Email batch and dispatches jobs to the high-priority queue."
-                    }
-                },
-                {
-                    "name": "Replay Identical Batch",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "pm.test('Idempotent replay returns existing batch', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    pm.expect(pm.response.json().status).to.eql('queued');",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Idempotency-Key",
-                                "value": "{{idempotency_key}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"Your order has shipped.\",\n    \"recipient_ids\": [\n        {{subscriber_id}},\n        {{second_subscriber_id}}\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/notifications/bulk",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "notifications",
-                                "bulk"
-                            ]
-                        },
-                        "description": "Run after Send Transactional Email Batch. It reuses the same key and payload."
+                        "description": "Happy-path Email batch using seeded subscribers that should reach delivered. Send it again with the same Idempotency-Key to verify the idempotent replay returns 200."
                     }
                 },
                 {
@@ -162,7 +118,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"A different message using the same key.\",\n    \"recipient_ids\": [\n        {{subscriber_id}},\n        {{second_subscriber_id}}\n    ]\n}"
+                            "raw": "{\n    \"channel\": \"email\",\n    \"type\": \"transactional\",\n    \"message\": \"A different message using the same key.\",\n    \"recipient_ids\": [\n        {{subscriber_with_delivered_status_id}},\n        {{second_subscriber_with_delivered_status_id}}\n    ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/notifications/bulk",
@@ -217,7 +173,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"channel\": \"sms\",\n    \"type\": \"marketing\",\n    \"message\": \"This week's offers are available.\",\n    \"recipient_ids\": [\n        {{subscriber_id}}\n    ]\n}"
+                            "raw": "{\n    \"channel\": \"sms\",\n    \"type\": \"marketing\",\n    \"message\": \"This week's offers are available.\",\n    \"recipient_ids\": [\n        {{subscriber_with_dropped_status_id}}\n    ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/notifications/bulk",
@@ -229,7 +185,7 @@
                                 "bulk"
                             ]
                         },
-                        "description": "Creates an SMS batch and dispatches jobs to the default-priority queue."
+                        "description": "Failure-path SMS batch using a seeded subscriber that should end in dropped after provider failure."
                     }
                 }
             ]
@@ -263,13 +219,13 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/subscribers/{{subscriber_id}}/notifications?page=1&per_page=20",
+                            "raw": "{{base_url}}/subscribers/{{subscriber_with_dropped_status_id}}/notifications?page=1&per_page=20",
                             "host": [
                                 "{{base_url}}"
                             ],
                             "path": [
                                 "subscribers",
-                                "{{subscriber_id}}",
+                                "{{subscriber_with_dropped_status_id}}",
                                 "notifications"
                             ],
                             "query": [
