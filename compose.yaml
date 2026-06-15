@@ -50,6 +50,24 @@ services:
                 - '${DB_USERNAME}'
             retries: 3
             timeout: 5s
+    queue.worker:
+        image: 'sail-8.5/app'
+        command: 'php artisan queue:work rabbitmq --queue=notifications.high,notifications.default --tries=4 --timeout=30'
+        restart: unless-stopped
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
     redis:
         image: 'redis:alpine'
         ports:
