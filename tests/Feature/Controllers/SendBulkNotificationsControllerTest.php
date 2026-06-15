@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature;
+namespace Tests\Feature\Controllers;
 
 use App\Enums\NotificationStatus;
 use App\Jobs\ProcessNotification;
@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Queue;
 use Tests\TestCase;
 
-class NotificationsControllerTest extends TestCase
+class SendBulkNotificationsControllerTest extends TestCase
 {
     use RefreshDatabase;
 

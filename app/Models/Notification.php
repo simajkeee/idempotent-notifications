@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property NotificationBatch $batch
+ * @property Subscriber $recipient
+ * @property NotificationStatus $status
+ */
 class Notification extends Model
 {
     /** @use HasFactory<NotificationFactory> */
