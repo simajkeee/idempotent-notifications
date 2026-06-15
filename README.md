@@ -177,15 +177,13 @@ The real-infrastructure integration test verifies:
 bulk API -> RabbitMQ -> queue worker -> provider -> delivered database status
 ```
 
-Stop the regular worker first so it cannot consume the integration-test job:
+Run the integration suite:
 
 ```bash
-vendor/bin/sail stop queue.worker
-vendor/bin/sail php vendor/bin/phpunit --configuration phpunit.integration.xml
-vendor/bin/sail up -d queue.worker
+make test-integration
 ```
 
-The integration suite uses the `testing` PostgreSQL database, Redis, and RabbitMQ. It purges the `notifications.high` queue before and after execution.
+The Make target temporarily stops the regular queue worker so it cannot consume the integration-test job, then restores it after the test even if PHPUnit fails. The integration suite uses the `testing` PostgreSQL database, Redis, and RabbitMQ. It purges the `notifications.high` queue before and after execution.
 
 ## Delivery Guarantees
 

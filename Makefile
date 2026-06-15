@@ -48,9 +48,9 @@ test:
 	$(SAIL) artisan test
 
 test-integration:
-	$(SAIL) stop queue.worker
+	@trap '$(SAIL) up -d queue.worker' EXIT; \
+	$(SAIL) stop queue.worker; \
 	$(SAIL) php vendor/bin/phpunit --configuration phpunit.integration.xml
-	$(SAIL) up -d queue.worker
 
 worker-stop:
 	$(SAIL) stop queue.worker
