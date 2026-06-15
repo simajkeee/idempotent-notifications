@@ -124,4 +124,32 @@ class SendBulkNotificationsControllerTest extends TestCase
         $this->assertDatabaseCount('notifications', 3);
         Queue::assertPushed(ProcessNotification::class, 3);
     }
+
+    public function test_notification_types_are_dispatched_to_their_priority_queues(): void
+    {
+        Queue::fake();
+        $subscriber = Subscriber::factory()->createOne();
+
+        $payload = [
+            'channel' => 'email',
+            'message' => 'Priority test',
+            'recipient_ids' => [$subscriber->id],
+        ];
+
+        $this->postJson('/api/notifications/bulk', [
+            ...$payload,
+            'type' => 'transactional',
+        ], ['Idempotency-Key' => 'transactional-priority-test'])
+            ->assertAccepted();
+
+        $this->postJson('/api/notifications/bulk', [
+            ...$payload,
+            'type' => 'marketing',
+        ], ['Idempotency-Key' => 'marketing-priority-test'])
+            ->assertAccepted();
+
+        Queue::assertPushedOn('notifications.high', ProcessNotification::class);
+        Queue::assertPushedOn('notifications.default', ProcessNotification::class);
+        Queue::assertPushed(ProcessNotification::class, 2);
+    }
 }
