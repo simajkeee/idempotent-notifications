@@ -1,6 +1,6 @@
 SAIL := vendor/bin/sail
 
-.PHONY: help up down restart build logs shell migrate fresh seed test test-integration worker-stop worker-start
+.PHONY: help up down restart build logs shell key migrate fresh seed test test-integration worker-stop worker-start
 
 help:
 	@printf '%s\n' \
@@ -10,6 +10,7 @@ help:
 		'make build             Build Docker images' \
 		'make logs              Follow Docker service logs' \
 		'make shell             Open a shell in the application container' \
+		'make key               Generate the Laravel application key' \
 		'make migrate           Run database migrations' \
 		'make fresh             Rebuild and seed the development database' \
 		'make seed              Run database seeders' \
@@ -34,6 +35,9 @@ logs:
 
 shell:
 	$(SAIL) shell
+
+key:
+	$(SAIL) artisan key:generate
 
 migrate:
 	$(SAIL) artisan migrate

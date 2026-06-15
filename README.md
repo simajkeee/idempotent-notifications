@@ -52,14 +52,14 @@ RABBITMQ_WORKER=default
 Start the application, PostgreSQL, Redis, RabbitMQ, and queue worker:
 
 ```bash
-vendor/bin/sail up -d
+make up
 ```
 
 Generate the application key and initialize the database:
 
 ```bash
-vendor/bin/sail artisan key:generate
-vendor/bin/sail artisan migrate:fresh --seed
+make key
+make fresh
 ```
 
 The API is available at `http://localhost/api`.
@@ -98,18 +98,6 @@ Jobs retry temporary provider failures with backoff. Permanent failures and jobs
 
 The `Idempotency-Key` header is required. Repeating the same request with the same key returns the existing batch. Reusing the key with a different payload returns `409 Conflict`.
 
-```bash
-curl --request POST http://localhost/api/notifications/bulk \
-    --header 'Content-Type: application/json' \
-    --header 'Idempotency-Key: example-request-1' \
-    --data '{
-        "channel": "email",
-        "type": "transactional",
-        "message": "Your order has shipped.",
-        "recipient_ids": [1, 2]
-    }'
-```
-
 Accepted response:
 
 ```json
@@ -133,10 +121,6 @@ Optional query parameters:
 
 - `page`: integer, minimum `1`
 - `per_page`: integer between `1` and `200`, default `50`
-
-```bash
-curl 'http://localhost/api/subscribers/1/notifications?per_page=20'
-```
 
 Notifications are returned newest first with pagination metadata.
 
@@ -168,7 +152,7 @@ Mock providers synchronously confirm successful delivery. Therefore, successful 
 Run the regular isolated test suite:
 
 ```bash
-vendor/bin/sail artisan test
+make test
 ```
 
 The real-infrastructure integration test verifies:
